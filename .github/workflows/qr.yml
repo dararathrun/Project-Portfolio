@@ -1,0 +1,50 @@
+name: Generate QR Code
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install QR library
+        run: pip install qrcode[pil]
+
+      - name: Generate QR code
+        run: |
+          python - << 'EOF'
+          import qrcode
+          from qrcode.constants import ERROR_CORRECT_H
+
+          url = "https://dararathrun.github.io/Project-Portfolio/"
+
+          qr = qrcode.QRCode(
+              version=2,
+              error_correction=ERROR_CORRECT_H,
+              box_size=10,
+              border=4,
+          )
+
+          qr.add_data(url)
+          qr.make(fit=True)
+
+          img = qr.make_image(fill_color="black", back_color="white")
+          img.save("portfolio_qr.png")
+          EOF
+
+      - name: Commit QR code
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add portfolio_qr.png
+          git commit -m "Auto-generate portfolio QR code" || echo "No changes"
+          git push
